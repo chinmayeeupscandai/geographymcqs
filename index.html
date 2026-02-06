@@ -44,6 +44,7 @@
       border-radius: 8px;
       outline: none;
       font-size: 16px;
+      box-sizing: border-box;
     }
     input:focus {
       border-color: #ff4d94;
@@ -77,10 +78,21 @@
       overflow-y: auto;
       white-space: pre-wrap;
     }
+
+    /* Logic Controls */
+    #mainPortal { display: none; }
+    #paymentGate { display: block; text-align: center; }
   </style>
 </head>
 <body>
-  <div class="container">
+
+  <div class="container" id="paymentGate">
+    <h1>Unlock Geography MCQ Generator</h1>
+    <p style="text-align: center; color: #666;">Access premium UPSC Geography practice questions. Pay once to unlock this portal.</p>
+    <button onclick="handlePayment()">Pay to Unlock</button>
+  </div>
+
+  <div class="container" id="mainPortal">
     <h1>Geography MCQ Generator</h1>
 
     <label for="topic">Enter Topic</label>
@@ -98,23 +110,36 @@
 
   <script>
     const WEBHOOK = 'https://hook.eu2.make.com/yrg14qbp4cvgdoaqjfujtw1hrycjc416';
-    const CASHFREE_URL = 'https://payments.cashfree.com/forms/geographymcqs';
+    const CASHFREE_LINK = 'https://payments.cashfree.com/forms/geography';
 
-    const params = new URLSearchParams(window.location.search);
-    const paymentDone = params.get('paid') === '1';
+    window.onload = function() {
+      const params = new URLSearchParams(window.location.search);
+      const status = params.get('payment_status');
+      const paidParam = params.get('paid');
+      const alreadyPaid = localStorage.getItem('geography_paid_verified') === 'true';
 
-    // 🔒 FORCE PAYMENT BEFORE ACCESS
-    if (!paymentDone) {
-      const returnUrl =
-        window.location.origin +
-        window.location.pathname +
-        '?paid=1';
+      // Unlock if coming back from success or already paid in this browser
+      if (status === 'SUCCESS' || status === 'success' || paidParam === '1' || alreadyPaid) {
+        unlockPortal();
+      }
+    };
 
-      window.location.replace(
-        CASHFREE_URL + `?return_url=${encodeURIComponent(returnUrl)}`
-      );
+    function handlePayment() {
+      window.location.href = CASHFREE_LINK;
     }
 
+    function unlockPortal() {
+      localStorage.setItem('geography_paid_verified', 'true');
+      document.getElementById('paymentGate').style.display = 'none';
+      document.getElementById('mainPortal').style.display = 'block';
+
+      // Cleaner URL after redirect
+      if (window.history.replaceState) {
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+    }
+
+    // ORIGINAL GENERATOR LOGIC
     document.getElementById('submitBtn').addEventListener('click', async () => {
       const topic = document.getElementById('topic').value.trim();
       const difficulty = document.getElementById('difficulty').value.trim();
