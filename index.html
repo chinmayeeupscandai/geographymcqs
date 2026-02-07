@@ -79,7 +79,6 @@
       white-space: pre-wrap;
     }
 
-    /* Logic Controls */
     #mainPortal { display: none; }
     #paymentGate { display: block; text-align: center; }
   </style>
@@ -88,7 +87,9 @@
 
   <div class="container" id="paymentGate">
     <h1>Unlock Geography MCQ Generator</h1>
-    <p style="text-align: center; color: #666;">Access premium UPSC Geography practice questions. Pay once to unlock this portal.</p>
+    <p style="text-align: center; color: #666;">
+      Access premium UPSC Geography practice questions. Pay once to unlock this portal.
+    </p>
     <button onclick="handlePayment()">Pay to Unlock</button>
   </div>
 
@@ -102,6 +103,13 @@
     <input type="text" id="difficulty" placeholder="e.g. Easy, Medium, Hard">
 
     <button id="submitBtn">Generate Questions</button>
+
+    <!-- PROGRESS BAR (ONLY ADDITION) -->
+    <div id="progressWrapper" style="display:none;margin-top:16px;">
+      <div id="progressBar"
+           style="height:8px;width:0%;background:#ff4d94;border-radius:6px;transition:width 0.3s;">
+      </div>
+    </div>
 
     <div class="response-box" id="responseBox">
       Enter details above and click Generate.
@@ -118,7 +126,6 @@
       const paidParam = params.get('paid');
       const alreadyPaid = localStorage.getItem('geography_paid_verified') === 'true';
 
-      // Unlock if coming back from success or already paid in this browser
       if (status === 'SUCCESS' || status === 'success' || paidParam === '1' || alreadyPaid) {
         unlockPortal();
       }
@@ -133,13 +140,15 @@
       document.getElementById('paymentGate').style.display = 'none';
       document.getElementById('mainPortal').style.display = 'block';
 
-      // Cleaner URL after redirect
       if (window.history.replaceState) {
         window.history.replaceState({}, document.title, window.location.pathname);
       }
     }
 
-    // ORIGINAL GENERATOR LOGIC
+    // ORIGINAL LOGIC + PROGRESS BAR
+    const progressWrapper = document.getElementById('progressWrapper');
+    const progressBar = document.getElementById('progressBar');
+
     document.getElementById('submitBtn').addEventListener('click', async () => {
       const topic = document.getElementById('topic').value.trim();
       const difficulty = document.getElementById('difficulty').value.trim();
@@ -149,6 +158,16 @@
         responseBox.innerText = 'Please fill in both fields.';
         return;
       }
+
+      progressWrapper.style.display = 'block';
+      progressBar.style.width = '0%';
+
+      let progress = 0;
+      const fakeProgress = setInterval(() => {
+        progress += Math.floor(Math.random() * 10) + 10;
+        if (progress > 90) progress = 90;
+        progressBar.style.width = progress + '%';
+      }, 300);
 
       responseBox.innerText = 'Generating geography questions...';
 
@@ -161,9 +180,21 @@
         });
 
         const data = await res.text();
+
+        progressBar.style.width = '100%';
+        clearInterval(fakeProgress);
+
+        setTimeout(() => {
+          progressWrapper.style.display = 'none';
+          progressBar.style.width = '0%';
+        }, 500);
+
         responseBox.innerText =
           `📘 Topic: ${topic}\n🎯 Difficulty: ${difficulty}\n\n${data}`;
+
       } catch (err) {
+        clearInterval(fakeProgress);
+        progressWrapper.style.display = 'none';
         responseBox.innerText = 'Error sending data. Please try again.';
       }
     });
